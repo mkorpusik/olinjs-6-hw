@@ -1,0 +1,26 @@
+extends layout
+
+block content
+  script $('.body').css('background-color', '#{loggedInUser.color}');
+  h1= title
+  //- '#{loggedInUser.color}'
+
+  each url, i in #{loggedInUser.img_urls}
+    div=url
+
+  div(id="container")
+    div(id="carousel")
+      img(src='#{loggedInUser.img_url}')
+      img(src='point_lobos.jpg')
+    a(id="ui-carousel-next")(href='#') next
+    div
+    a(id="ui-carousel-prev")(href='#') prev
+  
+  script $( "#carousel" ).rcarousel( {width: 200, height: 200, visible:1, step:1, margin:10, auto:{enabled: true}} );
+
+  form(id='change_color', action='/color', method='post')
+    h3 Enter a new background color!
+    input(class="bkgd_color", name="color")
+    input(class="color_button", type="submit")
+
+  a(href="/logout", class="logout") Logout
