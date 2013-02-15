@@ -27,10 +27,13 @@ exports.index2 = function(req, res){
     id = req.session.user.fb_id;
   }
   
-  var user = User.findOne({fb_id:id}, function (err, loggedInUser) {
+  var user = User.findOne({fb_id:id}).populate('img_urls').exec(function (err, loggedInUser) {
     if (err)
-        return console.log("error");
-    console.log("docs ", loggedInUser);
+        return console.log(err);
+    // console.log("docs ", loggedInUser);
+    // console.log(loggedInUser);
+
+    console.log(loggedInUser);
     res.render('index2', {loggedInUser:loggedInUser, title: 'MyFacebookSpace' });
   });
   

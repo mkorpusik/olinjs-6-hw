@@ -33,6 +33,7 @@ app.configure('development', function(){
 
 var models = require('./models');
 var User = models.User;
+var Img = models.Img;
 
 function facebookGetUser() {
   return function(req, res, next) {
@@ -41,22 +42,13 @@ function facebookGetUser() {
         //res.send("you need to login");
         res.render('login', {title:"Login"});
       } else {
-        console.log(user);
+        // console.log(user);
         req.user = user;
         next();
       }
     });
   }
 }
-
-/*
-app.get('/myspace', facebookGetUser(), function(req, res){
-    var user = req.session.user;
-    console.log(user);
-    //res.send("hello there", req.user);
-    res.redirect('/loggedIn');
-});
-*/
 
 app.get('/login', Facebook.loginRequired(
   {scope: ['user_photos', 'friends_photos', 'publish_stream']}), function (req, res) {
@@ -65,7 +57,7 @@ app.get('/login', Facebook.loginRequired(
 
   req.facebook.api('/me', function(err, data) {
     ///picture?redirect=false&type=large
-    console.log("user", data);
+    // console.log("user", data);
     var image = "http://graph.facebook.com/" + data.username + "/picture?width=200&height=200";
     //res.send(data);
 
@@ -97,7 +89,13 @@ app.get('/login', Facebook.loginRequired(
               if (data.photos!=undefined){
                 for (var j in data.photos.data){
                   var url = data.photos.data[j].picture;
-                  images[n]=url;
+                  var id = data.photos.data[j].id;
+                  var img = new Img({ id:id, url: url});
+                  img.save(function (err) {
+                    if (err)
+                      return console.log("error: couldn't save img");
+                  });
+                  images[n]=img;
                   n=n+1;
                   // limit to five photos per friend
                   if (j>5)
@@ -105,7 +103,8 @@ app.get('/login', Facebook.loginRequired(
                 }
               }
             console.log(images);
-            User.update({fb_id:id}, {$set: {'img_urls': images}}, function(err){});
+            User.update({fb_id:fb_id}, {$set: {'img_urls': images}}, function(err){});
+            // res.redirect('/'); // Why does this throw an error: can't set headers after they're sent?
             });
             // limit to 30 friends
             if (i>30)
@@ -117,7 +116,7 @@ app.get('/login', Facebook.loginRequired(
       // login with sessions if user exists
       else if (docs.length>0){
         var user = docs;
-        console.log("existing user "+user);
+        // console.log("existing user "+user);
         req.session.user = user;
         //console.log("session user "+req.session.user);
         res.redirect('/');
@@ -141,6 +140,22 @@ app.get('/logout', function(req, res){
 
 app.get('/', facebookGetUser(), routes.index2);
 app.post('/color', routes.color);
+
+app.post('/comment', function(req, res){
+  console.log("hello!");
+  console.log(req.body);
+  // how do you get id and message when the name is the id?
+  id = req.body.img_id; 
+  message = req.body.comment;
+  req.facebook.api('/'+id+'/comments', 'post', {message:message}, function(err, data) {
+    if (err)
+      console.log(err);
+    else
+      console.log(data);
+  });
+  res.redirect('/');
+});
+
 app.get('/users', user.list);
 
 http.createServer(app).listen(app.get('port'), function(){
